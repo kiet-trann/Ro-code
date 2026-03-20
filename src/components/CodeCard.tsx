@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Copy, Star, Check, User } from 'lucide-react';
+import { Copy, Star, Check, User, Eye, MessageCircle, Tag } from 'lucide-react';
 import codeApi from '../api/codeApi';
 import toast from 'react-hot-toast';
 
@@ -10,19 +10,46 @@ export interface CodeCardProps {
   timeAgo: string;
   avgRating: number;
   isWatched: boolean;
-  currentUserId?: number; // ĐÃ THÊM: Để đón ID từ Feed/Profile truyền xuống
+  currentUserId?: number;
+  // --- 3 TRƯỜNG MỚI THÊM ---
+  actorName?: string;
+  category?: string;
+  viewCount?: number;
+  // Hàm trigger mở modal bình luận (Sẽ làm ở bước sau)
+  onOpenComments?: (codeId: number) => void;
 }
 
-export default function CodeCard({ id, codeText, author, timeAgo, avgRating, isWatched: apiIsWatched, currentUserId }: CodeCardProps) {
+export default function CodeCard({
+  id, codeText, author, timeAgo, avgRating, isWatched: apiIsWatched, currentUserId,
+  actorName = "Chưa cập nhật",
+  category = "Movie",
+  viewCount = 0,
+  onOpenComments
+}: CodeCardProps) {
   const [isWatched, setIsWatched] = useState<boolean>(apiIsWatched);
   const [userRating, setUserRating] = useState<number>(0);
   const [copied, setCopied] = useState<boolean>(false);
 
-  const handleCopy = () => {
+  // State quản lý lượt xem hiển thị trên giao diện
+  const [views, setViews] = useState<number>(viewCount);
+  const [hasViewed, setHasViewed] = useState<boolean>(false); // Tránh spam view
+
+  const handleCopy = async () => {
     navigator.clipboard.writeText(codeText);
     setCopied(true);
     toast.success('Đã chép mã vào bộ nhớ đệm!');
     setTimeout(() => setCopied(false), 2000);
+
+    // Tự động TĂNG VIEW khi user bấm Copy (và chỉ tăng 1 lần cho mỗi phiên)
+    if (id && !hasViewed) {
+      try {
+        await codeApi.increaseView(id);
+        setViews(prev => prev + 1); // Cập nhật số view ngay trên màn hình
+        setHasViewed(true);
+      } catch (error) {
+        console.log("Lỗi khi tăng view:", error);
+      }
+    }
   };
 
   const handleRate = async (score: number) => {
@@ -42,7 +69,8 @@ export default function CodeCard({ id, codeText, author, timeAgo, avgRating, isW
     <div className={`relative p-5 rounded-xl border transition-all duration-300 ${isWatched ? 'bg-zinc-900/40 border-yellow-500/20 opacity-70' : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
       }`}>
 
-      <div className="flex justify-between items-center mb-4 text-xs text-zinc-500">
+      {/* Header: Tác giả & Thời gian */}
+      <div className="flex justify-between items-center mb-3 text-xs text-zinc-500">
         <div className="flex items-center gap-2">
           <div className="p-1.5 bg-zinc-800 rounded-full"><User size={12} className="text-zinc-400" /></div>
           <span className="font-medium text-zinc-300">{author}</span>
@@ -50,18 +78,34 @@ export default function CodeCard({ id, codeText, author, timeAgo, avgRating, isW
         <span>{timeAgo}</span>
       </div>
 
+      {/* Info: Tên diễn viên & Thể loại */}
+      <div className="flex justify-between items-center mb-3">
+        <div className="text-sm font-semibold text-zinc-300 flex items-center gap-2">
+          <Tag size={14} className="text-yellow-500" />
+          {actorName}
+        </div>
+        {/* Badge phân loại */}
+        <span className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${category === 'Haiten' ? 'bg-red-500/20 text-red-500 border border-red-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+          }`}>
+          {category}
+        </span>
+      </div>
+
+      {/* Box chứa Code */}
       <div className="flex justify-between items-center bg-black p-4 rounded-lg border border-zinc-800/50 mb-4 group">
         <span className="font-mono text-xl tracking-wider text-zinc-100 uppercase">{codeText}</span>
         <button
           onClick={handleCopy}
-          title="Sao chép"
+          title="Sao chép & Xem"
           className="p-2 bg-zinc-800 rounded-md text-zinc-400 hover:text-yellow-400 hover:bg-zinc-700 transition-colors"
         >
           {copied ? <Check size={18} className="text-green-400" /> : <Copy size={18} />}
         </button>
       </div>
 
+      {/* Footer: Rating, Views & Comments */}
       <div className="flex justify-between items-center">
+        {/* Cụm đánh giá sao */}
         <div className="flex items-center gap-1 cursor-pointer">
           {[1, 2, 3, 4, 5].map((star) => (
             <Star
@@ -74,10 +118,32 @@ export default function CodeCard({ id, codeText, author, timeAgo, avgRating, isW
             />
           ))}
         </div>
-        <div className="text-xs text-zinc-500 font-mono">
-          {isWatched ? 'ĐÃ XEM' : `ĐIỂM: ${avgRating}/5`}
+
+        {/* Cụm Thống kê (View, Bình luận, Điểm) */}
+        <div className="flex items-center gap-4 text-xs text-zinc-500 font-mono">
+          {/* Lượt xem */}
+          <div className="flex items-center gap-1" title="Lượt xem">
+            <Eye size={14} />
+            <span>{views}</span>
+          </div>
+
+          {/* Nút Bình luận */}
+          <button
+            onClick={() => id && onOpenComments && onOpenComments(id)}
+            className="flex items-center gap-1 hover:text-yellow-400 transition-colors"
+            title="Xem bình luận"
+          >
+            <MessageCircle size={14} />
+            <span>Bình luận</span>
+          </button>
+
+          {/* Điểm số / Trạng thái */}
+          <div className="ml-2 pl-4 border-l border-zinc-800">
+            {isWatched ? 'ĐÃ XEM' : `ĐIỂM: ${avgRating}/5`}
+          </div>
         </div>
       </div>
+
     </div>
   );
 }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import TabNavigation, { type TabType } from '../components/TabNavigation';
 import CodeCard, { type CodeCardProps } from '../components/CodeCard';
 import codeApi from '../api/codeApi';
+import CommentModal from '../components/CommentModal'; // <-- 1. IMPORT MODAL VÀO ĐÂY
 
 // Khai báo FeedProps
 interface FeedProps {
@@ -17,6 +18,9 @@ export default function Feed({ currentUserId }: FeedProps) {
     const [totalPages, setTotalPages] = useState<number>(1);
     const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
 
+    // --- 2. THÊM STATE QUẢN LÝ MODAL BÌNH LUẬN ---
+    const [isCommentModalOpen, setIsCommentModalOpen] = useState<boolean>(false);
+    const [selectedCodeId, setSelectedCodeId] = useState<number | null>(null);
 
     const tabs: TabType[] = [
         { id: 'trending', label: 'Lên "đỉnh"' },
@@ -28,6 +32,7 @@ export default function Feed({ currentUserId }: FeedProps) {
         setCodes([]);
         setPage(1);
     }, [activeTab]);
+
     useEffect(() => {
         const fetchCodes = async () => {
             if (!currentUserId) return;
@@ -60,6 +65,12 @@ export default function Feed({ currentUserId }: FeedProps) {
         fetchCodes();
     }, [activeTab, currentUserId, page]);
 
+    // --- 3. HÀM XỬ LÝ KHI BẤM NÚT BÌNH LUẬN ---
+    const handleOpenComments = (codeId: number) => {
+        setSelectedCodeId(codeId);
+        setIsCommentModalOpen(true);
+    };
+
     return (
         <main className="max-w-2xl mx-auto px-4 py-8 animate-in slide-in-from-bottom-4 duration-500">
             <TabNavigation tabs={tabs} activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -69,7 +80,12 @@ export default function Feed({ currentUserId }: FeedProps) {
                 ) : codes.length > 0 ? (
                     <>
                         {codes.map(code => (
-                            <CodeCard key={code.id} {...code} currentUserId={currentUserId} />
+                            <CodeCard
+                                key={code.id}
+                                {...code}
+                                currentUserId={currentUserId}
+                                onOpenComments={handleOpenComments} // <-- 4. TRUYỀN HÀM MỞ MODAL CHO TỪNG THẺ CODE
+                            />
                         ))}
 
                         {/* NÚT XEM THÊM - Chỉ hiện khi trang hiện tại nhỏ hơn tổng số trang */}
@@ -87,6 +103,14 @@ export default function Feed({ currentUserId }: FeedProps) {
                     <div className="text-center py-10 text-zinc-600">Kho lưu trữ trống.</div>
                 )}
             </div>
+
+            {/* --- 5. CHÈN MODAL BÌNH LUẬN VÀO CUỐI TRANG --- */}
+            <CommentModal
+                isOpen={isCommentModalOpen}
+                onClose={() => setIsCommentModalOpen(false)}
+                codeId={selectedCodeId}
+                currentUserId={currentUserId}
+            />
         </main>
     );
 }
