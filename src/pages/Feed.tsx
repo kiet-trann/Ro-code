@@ -3,7 +3,9 @@ import TabNavigation, { type TabType } from '../components/TabNavigation';
 import CodeCard, { type CodeCardProps } from '../components/CodeCard';
 import codeApi from '../api/codeApi';
 import CommentModal from '../components/CommentModal'; // <-- 1. IMPORT MODAL VÀO ĐÂY
-
+import GachaModal from '../components/GachaModal';
+import { Dices } from 'lucide-react';
+import FloatingGacha from '../components/FloatingGacha';
 // Khai báo FeedProps
 interface FeedProps {
     currentUserId?: number;
@@ -21,6 +23,7 @@ export default function Feed({ currentUserId }: FeedProps) {
     // --- 2. THÊM STATE QUẢN LÝ MODAL BÌNH LUẬN ---
     const [isCommentModalOpen, setIsCommentModalOpen] = useState<boolean>(false);
     const [selectedCodeId, setSelectedCodeId] = useState<number | null>(null);
+    const [isGachaModalOpen, setIsGachaModalOpen] = useState<boolean>(false);
 
     const tabs: TabType[] = [
         { id: 'trending', label: 'Lên "đỉnh"' },
@@ -104,11 +107,18 @@ export default function Feed({ currentUserId }: FeedProps) {
                 )}
             </div>
 
+            <FloatingGacha onClick={() => setIsGachaModalOpen(true)} />
+
             {/* --- 5. CHÈN MODAL BÌNH LUẬN VÀO CUỐI TRANG --- */}
             <CommentModal
                 isOpen={isCommentModalOpen}
                 onClose={() => setIsCommentModalOpen(false)}
                 codeId={selectedCodeId}
+                currentUserId={currentUserId}
+            />
+            <GachaModal
+                isOpen={isGachaModalOpen}
+                onClose={() => setIsGachaModalOpen(false)}
                 currentUserId={currentUserId}
             />
         </main>

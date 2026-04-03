@@ -87,6 +87,9 @@ const codeApi = {
     // POST: Gửi bình luận mới
     postComment: (codeId: number | string, payload: CreateCommentPayload): Promise<CommentResponse> => {
         return axiosClient.post(`/comments/code/${codeId}`, payload);
+    },
+    spinGacha: (userId: number | string): Promise<CodeCardProps> => {
+        return axiosClient.post(`/codes/spin/${userId}`);
     }
 };
 
