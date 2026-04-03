@@ -90,6 +90,25 @@ const codeApi = {
     },
     spinGacha: (userId: number | string): Promise<CodeCardProps> => {
         return axiosClient.post(`/codes/spin/${userId}`);
+    },
+    searchCodes: (currentUserId: number, keyword: string, category: string, page: number, pageSize: number = 10) => {
+        return axiosClient.get(`/codes/search`, {
+            params: { currentUserId, keyword, category, page, pageSize }
+        });
+    },
+    // POST: Bật/Tắt trạng thái Lưu code
+    toggleSave: (codeId: number, userId: number | string) => {
+        // Gửi userId lên qua Body (ASP.NET [FromBody] int)
+        return axiosClient.post(`/codes/${codeId}/save`, userId, {
+            headers: { 'Content-Type': 'application/json' }
+        });
+    },
+
+    // GET: Lấy danh sách Tủ Đồ
+    getSavedCodes: (userId: number | string, page: number, pageSize: number = 10) => {
+        return axiosClient.get(`/codes/saved/${userId}`, {
+            params: { page, pageSize }
+        });
     }
 };
 

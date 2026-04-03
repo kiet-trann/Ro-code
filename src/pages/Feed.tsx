@@ -6,6 +6,7 @@ import CommentModal from '../components/CommentModal'; // <-- 1. IMPORT MODAL V�
 import GachaModal from '../components/GachaModal';
 import { Dices } from 'lucide-react';
 import FloatingGacha from '../components/FloatingGacha';
+import SearchBar from '../components/SearchBar';
 // Khai báo FeedProps
 interface FeedProps {
     currentUserId?: number;
@@ -25,6 +26,9 @@ export default function Feed({ currentUserId }: FeedProps) {
     const [selectedCodeId, setSelectedCodeId] = useState<number | null>(null);
     const [isGachaModalOpen, setIsGachaModalOpen] = useState<boolean>(false);
 
+    const [searchKeyword, setSearchKeyword] = useState<string>('');
+    const [searchCategory, setSearchCategory] = useState<string>('All');
+
     const tabs: TabType[] = [
         { id: 'trending', label: 'Lên "đỉnh"' },
         { id: 'foryou', label: 'Dành Cho Bạn' },
@@ -43,17 +47,24 @@ export default function Feed({ currentUserId }: FeedProps) {
             page === 1 ? setIsLoading(true) : setIsLoadingMore(true);
 
             try {
-                let response;
-                if (activeTab === 'trending') {
-                    response = await codeApi.getTrending(currentUserId, page, 10);
-                } else if (activeTab === 'foryou') {
-                    response = await codeApi.getForYou(currentUserId, page, 10);
-                } else {
-                    response = await codeApi.getNew(currentUserId, page, 10);
+                let response: any;
+
+                // KIỂM TRA: Nếu có gõ từ khóa hoặc chọn filter khác 'All', thì chạy chế độ Tìm Kiếm
+                if (searchKeyword.trim() !== '' || searchCategory !== 'All') {
+                    response = await codeApi.searchCodes(currentUserId, searchKeyword, searchCategory, page, 10);
+                }
+                // Nếu không tìm kiếm gì thì chạy logic Tab bình thường
+                else {
+                    if (activeTab === 'trending') {
+                        response = await codeApi.getTrending(currentUserId, page, 10);
+                    } else if (activeTab === 'foryou') {
+                        response = await codeApi.getForYou(currentUserId, page, 10);
+                    } else {
+                        response = await codeApi.getNew(currentUserId, page, 10);
+                    }
                 }
 
                 if (response) {
-                    // Nếu là trang 1 thì ghi đè, nếu trang > 1 thì nối mảng
                     setCodes(prev => page === 1 ? response.items : [...prev, ...response.items]);
                     setTotalPages(response.totalPages);
                 }
@@ -66,7 +77,7 @@ export default function Feed({ currentUserId }: FeedProps) {
         };
 
         fetchCodes();
-    }, [activeTab, currentUserId, page]);
+    }, [activeTab, currentUserId, page, searchKeyword, searchCategory]);
 
     // --- 3. HÀM XỬ LÝ KHI BẤM NÚT BÌNH LUẬN ---
     const handleOpenComments = (codeId: number) => {
@@ -74,9 +85,17 @@ export default function Feed({ currentUserId }: FeedProps) {
         setIsCommentModalOpen(true);
     };
 
+    const handleSearch = (keyword: string, category: string) => {
+        setSearchKeyword(keyword);
+        setSearchCategory(category);
+        setPage(1); // Khi search phải reset về trang 1
+    };
     return (
         <main className="max-w-2xl mx-auto px-4 py-8 animate-in slide-in-from-bottom-4 duration-500">
-            <TabNavigation tabs={tabs} activeTab={activeTab} setActiveTab={setActiveTab} />
+            <SearchBar onSearch={handleSearch} />
+            {searchKeyword.trim() === '' && searchCategory === 'All' && (
+                <TabNavigation tabs={tabs} activeTab={activeTab} setActiveTab={setActiveTab} />
+            )}
             <div className="flex flex-col gap-4">
                 {isLoading ? (
                     <div className="text-center text-zinc-500 font-mono py-10 animate-pulse">Chờ tí đang tìm...</div>
@@ -121,6 +140,7 @@ export default function Feed({ currentUserId }: FeedProps) {
                 onClose={() => setIsGachaModalOpen(false)}
                 currentUserId={currentUserId}
             />
+
         </main>
     );
 }

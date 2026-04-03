@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Copy, Star, Check, User, Eye, MessageCircle, Tag } from 'lucide-react';
+import { Copy, Check, MessageSquare, Star, PlayCircle, Bookmark, User, Tag, Eye, MessageCircle } from 'lucide-react';
 import codeApi from '../api/codeApi';
 import toast from 'react-hot-toast';
 
@@ -33,6 +33,42 @@ export default function CodeCard({
   // State quản lý lượt xem hiển thị trên giao diện
   const [views, setViews] = useState<number>(viewCount);
   const [hasViewed, setHasViewed] = useState<boolean>(false); // Tránh spam view
+
+  const [isSavedLocal, setIsSavedLocal] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleToggleSave = async () => {
+    // 1. SỬA LỖI ID: Thêm điều kiện check !id để TypeScript yên tâm
+    if (!currentUserId || !id) {
+      toast.error("Vui lòng đăng nhập để lưu code!");
+      return;
+    }
+    if (isSaving) return;
+
+    // Cập nhật UI ngay lập tức (Optimistic UI)
+    setIsSavedLocal(!isSavedLocal);
+    setIsSaving(true);
+
+    try {
+      // 2. SỬA LỖI ISSAVED: Thêm ': any' vào biến response
+      const response: any = await codeApi.toggleSave(id, currentUserId);
+
+      // Backend trả về { isSaved: true/false }
+      setIsSavedLocal(response.isSaved);
+
+      if (response.isSaved) {
+        toast.success("Đã cất vào tủ đồ!");
+      } else {
+        toast.success("Đã vứt khỏi tủ đồ!");
+      }
+    } catch (error) {
+      // Nếu API lỗi, khôi phục lại trạng thái cũ
+      setIsSavedLocal(!isSavedLocal);
+      toast.error("Lỗi mạng, chưa lưu được!");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleCopy = async () => {
     navigator.clipboard.writeText(codeText);
@@ -87,20 +123,39 @@ export default function CodeCard({
         {/* Badge phân loại */}
         <span className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${category === 'Haiten' ? 'bg-red-500/20 text-red-500 border border-red-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
           }`}>
-          {category}
+          {category ? category : "Movie"}
         </span>
       </div>
 
       {/* Box chứa Code */}
       <div className="flex justify-between items-center bg-black p-4 rounded-lg border border-zinc-800/50 mb-4 group">
         <span className="font-mono text-xl tracking-wider text-zinc-100 uppercase">{codeText}</span>
-        <button
-          onClick={handleCopy}
-          title="Sao chép & Xem"
-          className="p-2 bg-zinc-800 rounded-md text-zinc-400 hover:text-yellow-400 hover:bg-zinc-700 transition-colors"
-        >
-          {copied ? <Check size={18} className="text-green-400" /> : <Copy size={18} />}
-        </button>
+
+        {/* --- CỤM NÚT ACTION (BOOKMARK + COPY) --- */}
+        <div className="flex items-center gap-2">
+
+          {/* NÚT LƯU (BOOKMARK) */}
+          <button
+            onClick={handleToggleSave}
+            disabled={isSaving}
+            className={`p-2 rounded-md transition-all duration-300 ${isSavedLocal
+              ? 'bg-yellow-500/20 text-yellow-500 border border-yellow-500/50'
+              : 'bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 border border-transparent'
+              }`}
+            title={isSavedLocal ? "Bỏ lưu" : "Lưu vào tủ đồ"}
+          >
+            <Bookmark size={18} className={isSavedLocal ? 'fill-yellow-500' : ''} />
+          </button>
+
+          {/* NÚT COPY */}
+          <button
+            onClick={handleCopy}
+            title="Sao chép & Xem"
+            className="p-2 bg-zinc-800 rounded-md text-zinc-400 hover:text-yellow-400 hover:bg-zinc-700 transition-colors"
+          >
+            {copied ? <Check size={18} className="text-green-400" /> : <Copy size={18} />}
+          </button>
+        </div>
       </div>
 
       {/* Footer: Rating, Views & Comments */}
