@@ -10,6 +10,7 @@ export interface CodeCardProps {
   timeAgo: string;
   avgRating: number;
   isWatched: boolean;
+  isSaved?: boolean;
   currentUserId?: number;
   // --- 3 TRƯỜNG MỚI THÊM ---
   actorName?: string;
@@ -20,7 +21,7 @@ export interface CodeCardProps {
 }
 
 export default function CodeCard({
-  id, codeText, author, timeAgo, avgRating, isWatched: apiIsWatched, currentUserId,
+  id, codeText, author, timeAgo, avgRating, isWatched: apiIsWatched, isSaved = false, currentUserId,
   actorName = "Chưa cập nhật",
   category = "Movie",
   viewCount = 0,
@@ -34,7 +35,7 @@ export default function CodeCard({
   const [views, setViews] = useState<number>(viewCount);
   const [hasViewed, setHasViewed] = useState<boolean>(false); // Tránh spam view
 
-  const [isSavedLocal, setIsSavedLocal] = useState(false);
+  const [isSavedLocal, setIsSavedLocal] = useState<boolean>(isSaved);
   const [isSaving, setIsSaving] = useState(false);
 
   const handleToggleSave = async () => {

@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import TabNavigation, { type TabType } from '../components/TabNavigation';
 import CodeCard, { type CodeCardProps } from '../components/CodeCard';
 import codeApi from '../api/codeApi';
-import CommentModal from '../components/CommentModal'; // <-- 1. IMPORT MODAL VÀO ĐÂY
+import CommentModal from '../components/CommentModal';
 import GachaModal from '../components/GachaModal';
 import { Dices } from 'lucide-react';
 import FloatingGacha from '../components/FloatingGacha';
 import SearchBar from '../components/SearchBar';
+
 // Khai báo FeedProps
 interface FeedProps {
     currentUserId?: number;
@@ -21,7 +22,7 @@ export default function Feed({ currentUserId }: FeedProps) {
     const [totalPages, setTotalPages] = useState<number>(1);
     const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
 
-    // --- 2. THÊM STATE QUẢN LÝ MODAL BÌNH LUẬN ---
+    // --- STATE QUẢN LÝ MODAL ---
     const [isCommentModalOpen, setIsCommentModalOpen] = useState<boolean>(false);
     const [selectedCodeId, setSelectedCodeId] = useState<number | null>(null);
     const [isGachaModalOpen, setIsGachaModalOpen] = useState<boolean>(false);
@@ -29,10 +30,12 @@ export default function Feed({ currentUserId }: FeedProps) {
     const [searchKeyword, setSearchKeyword] = useState<string>('');
     const [searchCategory, setSearchCategory] = useState<string>('All');
 
+    // --- 1. ĐÃ THÊM TAB "TỦ ĐỒ" VÀO ĐÂY ---
     const tabs: TabType[] = [
         { id: 'trending', label: 'Lên "đỉnh"' },
         { id: 'foryou', label: 'Dành Cho Bạn' },
-        { id: 'new', label: 'Code mới' }
+        { id: 'new', label: 'Code mới' },
+        { id: 'saved', label: 'Tủ Đồ' } 
     ];
 
     useEffect(() => {
@@ -49,16 +52,19 @@ export default function Feed({ currentUserId }: FeedProps) {
             try {
                 let response: any;
 
-                // KIỂM TRA: Nếu có gõ từ khóa hoặc chọn filter khác 'All', thì chạy chế độ Tìm Kiếm
+                // KIỂM TRA: Tìm Kiếm
                 if (searchKeyword.trim() !== '' || searchCategory !== 'All') {
                     response = await codeApi.searchCodes(currentUserId, searchKeyword, searchCategory, page, 10);
                 }
-                // Nếu không tìm kiếm gì thì chạy logic Tab bình thường
+                // CHẠY LOGIC TAB
                 else {
                     if (activeTab === 'trending') {
                         response = await codeApi.getTrending(currentUserId, page, 10);
                     } else if (activeTab === 'foryou') {
                         response = await codeApi.getForYou(currentUserId, page, 10);
+                    } else if (activeTab === 'saved') {
+                        // --- 2. ĐÃ THÊM LOGIC GỌI API TỦ ĐỒ VÀO ĐÂY ---
+                        response = await codeApi.getSavedCodes(currentUserId, page, 10);
                     } else {
                         response = await codeApi.getNew(currentUserId, page, 10);
                     }
@@ -79,7 +85,6 @@ export default function Feed({ currentUserId }: FeedProps) {
         fetchCodes();
     }, [activeTab, currentUserId, page, searchKeyword, searchCategory]);
 
-    // --- 3. HÀM XỬ LÝ KHI BẤM NÚT BÌNH LUẬN ---
     const handleOpenComments = (codeId: number) => {
         setSelectedCodeId(codeId);
         setIsCommentModalOpen(true);
@@ -88,14 +93,17 @@ export default function Feed({ currentUserId }: FeedProps) {
     const handleSearch = (keyword: string, category: string) => {
         setSearchKeyword(keyword);
         setSearchCategory(category);
-        setPage(1); // Khi search phải reset về trang 1
+        setPage(1); 
     };
+
     return (
         <main className="max-w-2xl mx-auto px-4 py-8 animate-in slide-in-from-bottom-4 duration-500">
             <SearchBar onSearch={handleSearch} />
+            
             {searchKeyword.trim() === '' && searchCategory === 'All' && (
                 <TabNavigation tabs={tabs} activeTab={activeTab} setActiveTab={setActiveTab} />
             )}
+            
             <div className="flex flex-col gap-4">
                 {isLoading ? (
                     <div className="text-center text-zinc-500 font-mono py-10 animate-pulse">Chờ tí đang tìm...</div>
@@ -106,11 +114,10 @@ export default function Feed({ currentUserId }: FeedProps) {
                                 key={code.id}
                                 {...code}
                                 currentUserId={currentUserId}
-                                onOpenComments={handleOpenComments} // <-- 4. TRUYỀN HÀM MỞ MODAL CHO TỪNG THẺ CODE
+                                onOpenComments={handleOpenComments} 
                             />
                         ))}
 
-                        {/* NÚT XEM THÊM - Chỉ hiện khi trang hiện tại nhỏ hơn tổng số trang */}
                         {page < totalPages && (
                             <button
                                 onClick={() => setPage(prev => prev + 1)}
@@ -128,13 +135,13 @@ export default function Feed({ currentUserId }: FeedProps) {
 
             <FloatingGacha onClick={() => setIsGachaModalOpen(true)} />
 
-            {/* --- 5. CHÈN MODAL BÌNH LUẬN VÀO CUỐI TRANG --- */}
             <CommentModal
                 isOpen={isCommentModalOpen}
                 onClose={() => setIsCommentModalOpen(false)}
                 codeId={selectedCodeId}
                 currentUserId={currentUserId}
             />
+            
             <GachaModal
                 isOpen={isGachaModalOpen}
                 onClose={() => setIsGachaModalOpen(false)}

@@ -14,7 +14,7 @@ export default function GachaModal({ isOpen, onClose, currentUserId }: GachaModa
     const [isSpinning, setIsSpinning] = useState(false);
     const [rotation, setRotation] = useState(0); // Góc quay hiện tại
     const [resultCode, setResultCode] = useState<CodeCardProps | null>(null);
-
+    const [isWakingServer, setIsWakingServer] = useState(false);
     if (!isOpen) return null;
 
     const handleSpin = async () => {
@@ -28,10 +28,14 @@ export default function GachaModal({ isOpen, onClose, currentUserId }: GachaModa
 
         setIsSpinning(true);
 
+        const wakeUpTimer = setTimeout(() => {
+            setIsWakingServer(true);
+        }, 4000);
         try {
             // 1. Gọi API lấy kết quả "ngầm" trước khi quay
             const response = await codeApi.spinGacha(currentUserId);
-
+            clearTimeout(wakeUpTimer);
+            setIsWakingServer(false);
             // 2. Tính toán góc quay (Quay ít nhất 5 vòng + một góc ngẫu nhiên để kim chỉ ngẫu nhiên)
             const extraSpins = 5 * 360; // 5 vòng
             const randomDegree = Math.floor(Math.random() * 360); // Trỏ vào 1 góc bất kỳ
@@ -47,6 +51,8 @@ export default function GachaModal({ isOpen, onClose, currentUserId }: GachaModa
             }, 4000);
 
         } catch (error: any) {
+            clearTimeout(wakeUpTimer);
+            setIsWakingServer(false);
             setIsSpinning(false);
             // Bắt lỗi từ Backend trả về (Ví dụ: "Hôm nay nhân phẩm đã cạn...")
             const errorMsg = error.response?.data?.message || "Lỗi máy chủ quay thưởng!";
@@ -104,6 +110,11 @@ export default function GachaModal({ isOpen, onClose, currentUserId }: GachaModa
                         >
                             Quay
                         </button>
+                    </div>
+                )}
+                {isWakingServer && (
+                    <div className="text-center text-yellow-500 font-mono text-sm animate-pulse mb-4">
+                        Server đang ngủ đông.<br />Chờ tí tôi gọi nó dậy nhé...
                     </div>
                 )}
 
