@@ -109,6 +109,15 @@ const codeApi = {
         return axiosClient.get(`/codes/saved/${userId}`, {
             params: { page, pageSize }
         });
+    },
+    // GET: Lấy thông tin Trang cá nhân (Profile)
+    getUserProfile: (targetUserId: number, currentUserId: number) => {
+        return axiosClient.get(`/codes/profile/${targetUserId}`, {
+            params: { currentUserId }
+        });
+    },
+    getLeaderboard: () => {
+        return axiosClient.get('/codes/leaderboard');
     }
 };
 

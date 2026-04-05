@@ -7,3 +7,25 @@
     @apply bg-black text-zinc-100 font-sans selection:bg-yellow-500/30 selection:text-yellow-200;
   }
 }
+
+@keyframes textShimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Tạo một class utility mới để Tailwind dùng được */
+.animate-text-shimmer {
+  /* Ép cái nền Gradient to gấp đôi cái chữ để nó có không gian chạy */
+  background-size: 200% auto;
+  /* Chạy kịch bản textShimmer, trong 3 giây, chạy đều (linear), lặp vô hạn */
+  animation: textShimmer 3s linear infinite;
+}
