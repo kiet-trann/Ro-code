@@ -61,23 +61,33 @@ export default function UploadModal({ isOpen, onClose, currentUserId }: UploadMo
     // 3. Gọi API với dữ liệu đã được lọc sạch
     toast.promise(
       codeApi.dropCode({
-        codeText: cleanCode.toUpperCase(), // Luôn lưu dạng in hoa cho đẹp
+        codeText: cleanCode.toUpperCase(),
         authorId: currentUserId,
         actorName: cleanActor,
         category: category
       }),
       {
-        loading: 'Đang thẩm định nhân phẩm...',
-        success: 'Đồng sét cảm ơn vì đã đóng góp ❤️',
-        error: 'Có lỗi xảy ra khi share code.',
+        loading: 'Đang soi chiếu nhân phẩm...',
+        // HỨNG LỜI KHEN TỪ BACKEND
+        success: (res: any) => {
+          // res.data.message chính là câu "Thả code thành công! Đã cộng điểm..." từ C#
+          return res.data?.message || 'Đồng sét cảm ơn vì đã đóng góp ❤️';
+        },
+        // HỨNG ĐẠN CHỬI TỪ BACKEND
+        error: (err: any) => {
+          // Móc câu chửi "Mã pha ke", "Hàng nhai lại" từ C# ra đập vào mặt User
+          return err.response?.data?.message || 'Cá mập cắn cáp hoặc Server nổ rồi!';
+        }
       }
-    ).then(() => {
+    ).then((res) => {
       setNewCode('');
       setActorName('');
       setCategory('Movie');
       onClose();
-      // Đợi 1 chút rồi load lại để thấy code mới
-      setTimeout(() => window.location.reload(), 1000);
+
+      // NẾU MUỐN PRO: Thay vì window.location.reload(), hãy gọi một prop function từ Component cha truyền vào.
+      // Ví dụ: onUploadSuccess(res.data.data); // Truyền mảng code mới vào hàm cha để nó nhét vào state list hiện tại
+
     }).finally(() => {
       setIsLoading(false);
     });

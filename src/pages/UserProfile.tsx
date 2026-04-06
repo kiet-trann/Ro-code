@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, UploadCloud, Eye, Bookmark, Award } from 'lucide-react';
+import { ArrowLeft, UploadCloud, Eye, Bookmark, Award, Trophy } from 'lucide-react';
 import codeApi from '../api/codeApi';
 import CodeCard, { type CodeCardProps } from '../components/CodeCard';
 import ProfileSkeleton from '../components/ProfileSkeleton';
@@ -12,6 +12,21 @@ interface UserProfileProps {
     onBack: () => void; // Nút thoát khỏi căn phòng
     onOpenComments: (codeId: number) => void;
 }
+// Hàm xuất ra combo CSS cực cháy dựa trên Rank Tier của Backend trả về
+export const getRankAura = (tier: string) => {
+    switch (tier) {
+        case 'Thách Đấu Sét':
+            return { color: 'text-red-500', border: 'border-red-500', glow: 'shadow-[0_0_30px_rgba(239,68,68,0.8)] animate-pulse', bg: 'bg-red-500/10', label: 'THÁCH ĐẤU' };
+        case 'Sét Kim Cương':
+            return { color: 'text-cyan-400', border: 'border-cyan-400', glow: 'shadow-[0_0_20px_rgba(34,211,238,0.6)]', bg: 'bg-cyan-400/10', label: 'KIM CƯƠNG' };
+        case 'Sét Vàng':
+            return { color: 'text-yellow-400', border: 'border-yellow-400', glow: 'shadow-[0_0_15px_rgba(250,204,21,0.5)]', bg: 'bg-yellow-400/10', label: 'VÀNG' };
+        case 'Sét Đồng':
+            return { color: 'text-orange-400', border: 'border-orange-400', glow: 'shadow-[0_0_10px_rgba(251,146,60,0.3)]', bg: 'bg-orange-400/10', label: 'ĐỒNG' };
+        default: // Sét Nhựa
+            return { color: 'text-zinc-500', border: 'border-zinc-800', glow: 'shadow-none', bg: 'bg-zinc-900', label: 'TÂN BINH' };
+    }
+};
 
 export default function UserProfile({ targetUserId, currentUserId, onBack, onOpenComments }: UserProfileProps) {
     const [profile, setProfile] = useState<any>(null);
@@ -70,47 +85,63 @@ export default function UserProfile({ targetUserId, currentUserId, onBack, onOpe
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 mb-8 shadow-lg relative overflow-hidden">
                 {/* Background trang trí */}
                 <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-r from-yellow-600/20 to-orange-500/10"></div>
-
-                <div className="relative flex flex-col sm:flex-row items-center gap-6">
-                    {/* Avatar lấy từ API tự động sinh */}
-                    <img
-                        src={profile.avatarUrl}
-                        alt="Avatar"
-                        className="w-24 h-24 rounded-full border-4 border-zinc-900 shadow-[0_0_15px_rgba(234,179,8,0.3)]"
-                    />
-
-                    <div className="flex-1 text-center sm:text-left">
-                        <h1 className="text-2xl font-black text-white flex items-center justify-center sm:justify-start gap-2">
-                            {profile.username}
-                            {profile.totalUploaded > 10 && (
-                                <span title="Huy hiệu Chăm chỉ">
-                                    <Award className="text-yellow-500" size={24} />
-                                </span>
-                            )}
-                        </h1>
-                        <p className="text-zinc-500 text-sm mb-4">
-                            {profile.isOwner ? "Đây là ổ của bạn" : "Thành viên của Rổ Sét"}
-                        </p>
-
-                        {/* Các con số biết nói */}
-                        <div className="flex flex-wrap justify-center sm:justify-start gap-4">
-                            <div className="bg-black/50 border border-zinc-800 rounded-xl px-4 py-2 text-center">
-                                <div className="text-yellow-500 font-black text-xl">{profile.totalUploaded}</div>
-                                <div className="text-[10px] text-zinc-500 uppercase tracking-widest flex items-center gap-1"><UploadCloud size={12} /> Đã đóng góp</div>
+                {(() => {
+                    const aura = getRankAura(profile.rankTier || 'Sét Nhựa');
+                    return (
+                        <div className="relative flex flex-col sm:flex-row items-center gap-6">
+                            {/* Avatar lấy từ API tự động sinh */}
+                            <div className="relative">
+                                <img
+                                    src={profile.avatarUrl}
+                                    alt="Avatar"
+                                    className={`w-24 h-24 rounded-full border-4 ${aura.border} ${aura.glow} object-cover z-10 relative bg-zinc-900`}
+                                />
+                                {/* Vương miện nhỏ cho Thách Đấu */}
+                                {profile.rankTier === 'Thách Đấu Sét' && (
+                                    <div className="absolute -top-4 -right-2 text-yellow-400 rotate-12 z-20">
+                                        <Trophy size={28} className="fill-yellow-400" />
+                                    </div>
+                                )}
                             </div>
-                            <div className="bg-black/50 border border-zinc-800 rounded-xl px-4 py-2 text-center">
-                                <div className="text-green-500 font-black text-xl">{profile.totalViews}</div>
-                                <div className="text-[10px] text-zinc-500 uppercase tracking-widest flex items-center gap-1"><Eye size={12} /> Lượt xem thu về</div>
-                            </div>
-                            {profile.isOwner && (
-                                <div className="bg-black/50 border border-zinc-800 rounded-xl px-4 py-2 text-center">
-                                    <div className="text-purple-500 font-black text-xl">{profile.totalSaved}</div>
-                                    <div className="text-[10px] text-zinc-500 uppercase tracking-widest flex items-center gap-1"><Bookmark size={12} /> Kho bí mật</div>
+
+                            <div className="flex-1 text-center sm:text-left">
+                                <h1 className="text-2xl font-black text-white flex items-center justify-center sm:justify-start gap-3">
+                                    {profile.username}
+
+                                    {/* HUY HIỆU RANK KHÈ NHAU */}
+                                    <span className={`text-[10px] uppercase tracking-widest px-2 py-1 rounded-md border ${aura.border} ${aura.color} ${aura.bg} font-black`}>
+                                        {aura.label}
+                                    </span>
+
+                                    {profile.totalUploaded > 10 && (
+                                        <span title="Huy hiệu Chăm chỉ"><Award className="text-yellow-500" size={24} /></span>
+                                    )}
+                                </h1>
+                                <p className="text-zinc-500 text-sm mb-4">
+                                    {profile.isOwner ? "Đây là ổ của bạn" : "Thành viên của Rổ Sét"}
+                                </p>
+
+                                {/* Các con số biết nói */}
+                                <div className="flex flex-wrap justify-center sm:justify-start gap-4">
+                                    <div className="bg-black/50 border border-zinc-800 rounded-xl px-4 py-2 text-center">
+                                        <div className="text-yellow-500 font-black text-xl">{profile.totalUploaded}</div>
+                                        <div className="text-[10px] text-zinc-500 uppercase tracking-widest flex items-center gap-1"><UploadCloud size={12} /> Đã đóng góp</div>
+                                    </div>
+                                    <div className="bg-black/50 border border-zinc-800 rounded-xl px-4 py-2 text-center">
+                                        <div className="text-green-500 font-black text-xl">{profile.totalViews}</div>
+                                        <div className="text-[10px] text-zinc-500 uppercase tracking-widest flex items-center gap-1"><Eye size={12} /> Lượt xem thu về</div>
+                                    </div>
+                                    {profile.isOwner && (
+                                        <div className="bg-black/50 border border-zinc-800 rounded-xl px-4 py-2 text-center">
+                                            <div className="text-purple-500 font-black text-xl">{profile.totalSaved}</div>
+                                            <div className="text-[10px] text-zinc-500 uppercase tracking-widest flex items-center gap-1"><Bookmark size={12} /> Kho bí mật</div>
+                                        </div>
+                                    )}
                                 </div>
-                            )}
+                            </div>
                         </div>
-                    </div>
-                </div>
+                    );
+                })()}
             </div>
 
             {/* --- TAB CHUYỂN ĐỔI BÊN TRONG PROFILE --- */}

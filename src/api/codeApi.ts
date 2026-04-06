@@ -33,6 +33,27 @@ export interface CreateCommentPayload {
     content: string;
     userId: number;
 }
+export interface UserProfileResponse {
+    id: number;
+    username: string;
+    avatarUrl: string;
+    rankTier: string;
+    actionPoints: number;
+    totalUploaded: number;
+    totalViews: number;
+    totalSaved: number;
+    isOwner: boolean;
+}
+export interface LeaderboardUser {
+    userId: number;
+    username: string;
+    avatarUrl: string;
+    rank: number;
+    rankTier: string;
+    actionPoints: number;
+    totalUploads: number;
+    totalViews: number;
+}
 
 const codeApi = {
     // GET: Lấy danh sách Code
@@ -111,14 +132,21 @@ const codeApi = {
         });
     },
     // GET: Lấy thông tin Trang cá nhân (Profile)
-    getUserProfile: (targetUserId: number, currentUserId: number) => {
+    getUserProfile: (targetUserId: number, currentUserId: number): Promise<UserProfileResponse> => {
         return axiosClient.get(`/codes/profile/${targetUserId}`, {
             params: { currentUserId }
         });
     },
-    getLeaderboard: () => {
+    getLeaderboard: (): Promise<LeaderboardUser[]> => {
         return axiosClient.get('/codes/leaderboard');
-    }
+    },
+    reportCode: (codeId: number, reporterId: number): Promise<{ message: string }> => {
+    // Chú ý: Backend [FromBody] int mong đợi dữ liệu dạng chuỗi JSON thô, 
+    // hoặc một object. Nếu BE bạn để [FromBody] int reporterId thì gửi thế này:
+    return axiosClient.post(`/codes/${codeId}/report`, reporterId, {
+        headers: { 'Content-Type': 'application/json' }
+    });
+},
 };
 
 export default codeApi;
