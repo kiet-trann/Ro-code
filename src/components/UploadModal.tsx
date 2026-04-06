@@ -79,7 +79,7 @@ export default function UploadModal({ isOpen, onClose, currentUserId }: UploadMo
           return err.response?.data?.message || 'Cá mập cắn cáp hoặc Server nổ rồi!';
         }
       }
-    ).then((res) => {
+    ).then(() => {
       setNewCode('');
       setActorName('');
       setCategory('Movie');
